@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BeaconTag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&family=Nunito:wght@500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #e6e9ef;
+    --surface: #e6e9ef;
+    --ink: #2a2f3a;
+    --muted: #7c8494;
+    --accent: #7d95c9;
+    --accent-ink: #4a608f;
+    --mint: #8fbfa9;
+    --danger: #c98a8a;
+    --shadow-dark: rgba(163,177,198,0.55);
+    --shadow-light: rgba(255,255,255,0.95);
+    --raise: 8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light);
+    --raise-sm: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+    --press: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+    --press-sm: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--ink); font-family: 'Nunito', system-ui, sans-serif; margin: 0; }
+  body { min-height: 100vh; padding-bottom: 60px; }
+  a { color: var(--accent-ink); text-decoration: none; }
+  h1, h2, h3, .brand { font-family: 'DM Sans', 'Nunito', sans-serif; letter-spacing: -0.01em; color: var(--ink); }
+  .muted { color: var(--muted); }
+
+  /* Topbar */
+  .topbar {
+    position: sticky; top: 16px; z-index: 20;
+    margin: 16px auto 0; max-width: 1180px;
+    padding: 14px 22px; border-radius: 24px;
+    background: var(--surface); box-shadow: var(--raise);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand { font-weight: 700; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+  .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: var(--raise-sm); }
+  .net-badge { font-size: 12px; color: var(--muted); padding: 6px 12px; border-radius: 999px; box-shadow: var(--press-sm); }
+
+  .btn {
+    font-family: inherit; font-weight: 600; font-size: 14px; color: var(--ink);
+    background: var(--surface); border: none; cursor: pointer;
+    padding: 12px 22px; border-radius: 999px;
+    box-shadow: var(--raise-sm);
+    transition: box-shadow .18s ease, transform .06s ease;
+  }
+  .btn:hover { box-shadow: var(--raise); }
+  .btn:active { box-shadow: var(--press-sm); transform: translateY(1px); }
+  .btn.accent { color: var(--accent-ink); }
+  .btn.mint { color: #3d7a63; }
+  .btn.small { padding: 8px 16px; font-size: 13px; }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* Layout */
+  .wrap { max-width: 1180px; margin: 24px auto 0; padding: 0 20px; }
+  .hero { text-align: center; padding: 42px 20px 22px; }
+  .hero h1 { font-size: 40px; margin: 0 0 10px; }
+  .hero p { color: var(--muted); margin: 0; font-size: 16px; }
+
+  .searchbar {
+    margin: 22px auto 34px; max-width: 720px;
+    background: var(--surface); border-radius: 22px;
+    box-shadow: var(--press);
+    padding: 10px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .searchbar input {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-family: inherit; font-size: 17px; color: var(--ink);
+    padding: 14px 6px;
+  }
+  .searchbar input::placeholder { color: var(--muted); }
+  .searchbar .icon { color: var(--muted); font-weight: 700; }
+
+  .cols { display: grid; grid-template-columns: 360px 1fr; gap: 24px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border-radius: var(--radius);
+    box-shadow: var(--raise); padding: 22px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 18px; }
+  .card h3 { margin: 18px 0 8px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+
+  .field {
+    background: var(--surface); border-radius: var(--radius-sm);
+    box-shadow: var(--press-sm); padding: 10px 14px; margin-bottom: 12px;
+  }
+  .field input, .field textarea {
+    width: 100%; border: none; outline: none; background: transparent;
+    font-family: inherit; font-size: 14px; color: var(--ink); resize: vertical;
+  }
+  .field textarea { min-height: 60px; }
+
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  .pill {
+    font-family: inherit; font-weight: 600; font-size: 13px;
+    color: var(--ink); background: var(--surface);
+    padding: 9px 16px; border-radius: 999px; border: none; cursor: pointer;
+    box-shadow: var(--raise-sm);
+    transition: box-shadow .16s ease, color .16s ease;
+  }
+  .pill:hover { color: var(--accent-ink); }
+  .pill.selected, .pill.active { box-shadow: var(--press-sm); color: var(--accent-ink); }
+  .pill.mine { color: var(--accent-ink); }
+  .pill.count::after { content: attr(data-count); margin-left: 8px; color: var(--muted); font-weight: 500; }
+
+  .holder-card {
+    background: var(--surface); border-radius: var(--radius);
+    box-shadow: var(--raise-sm); padding: 18px 20px; margin-bottom: 14px;
+    display: grid; grid-template-columns: 1fr auto; gap: 10px;
+  }
+  .holder-card .addr { font-family: 'DM Sans', monospace; font-weight: 700; font-size: 14px; }
+  .holder-card .bio { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
+  .holder-card .arrow { color: var(--muted); font-size: 18px; align-self: center; }
+
+  .empty {
+    text-align: center; padding: 44px 20px; color: var(--muted);
+    background: var(--surface); border-radius: var(--radius);
+    box-shadow: var(--press-sm);
+  }
+  .empty .glyph { font-size: 30px; margin-bottom: 8px; }
+
+  .fee-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .status-line { font-size: 12px; color: var(--muted); margin-top: 12px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(120%);
+    background: var(--surface); color: var(--ink);
+    padding: 14px 24px; border-radius: 999px;
+    box-shadow: var(--raise); font-weight: 600; font-size: 14px;
+    opacity: 0; transition: transform .35s ease, opacity .3s ease; z-index: 100;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.err { color: #944242; }
+  .toast.ok { color: #3d7a63; }
+
+  .footer { text-align: center; margin-top: 40px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> BeaconTag</div>
+  <div class="row">
+    <span id="netBadge" class="net-badge">Not connected</span>
+    <button id="connectBtn" class="btn accent">Connect Wallet</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Claim who you are on-chain.</h1>
+    <p>Short tags. Real addresses. A soft directory of people, by what they do.</p>
+  </div>
+
+  <div class="searchbar">
+    <span class="icon">⌕</span>
+    <input id="searchInput" placeholder="Find people by tag..." autocomplete="off" />
+    <button id="clearSearchBtn" class="btn small">Clear</button>
+  </div>
+
+  <div class="cols">
+    <!-- LEFT: My Profile -->
+    <div>
+      <div class="card">
+        <h2>My Profile</h2>
+        <div id="profileBody">
+          <p class="muted" style="font-size:14px;margin:0;">Connect your wallet to claim tags.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h2>Explore tags</h2>
+        <p class="muted" style="font-size:13px;margin:0 0 12px;">Tap a tag to see who holds it.</p>
+        <div id="allTagsWrap" class="tags"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Directory -->
+    <div>
+      <div class="card">
+        <h2 id="directoryTitle">Directory</h2>
+        <p id="directorySubtitle" class="muted" style="font-size:13px;margin:0 0 16px;">Search a tag or pick one on the left.</p>
+        <div id="directoryBody">
+          <div class="empty">
+            <div class="glyph">✿</div>
+            Nothing selected yet. Try searching a tag.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">BOT Chain — soft directory · testnet 968</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ==============================================================
+   MAINNET SWAP BLOCK — when moving from testnet to mainnet,
+   change these five values in one place:
+     CHAIN_ID_HEX   : "0x3C8" -> "0x2A5"
+     CHAIN_ID_DEC   : 968     -> 677
+     CHAIN_NAME     : "BOT Chain Testnet" -> "BOT Chain"
+     RPC_URL        : "https://rpc.bohr.life" -> "https://rpc.botchain.ai"
+     CONTRACT_ADDRESS : redeploy on mainnet and paste here
+   ============================================================== */
+
+const CHAIN_ID_HEX = "0x3C8";
+const CHAIN_ID_DEC = 968;
+const CHAIN_NAME   = "BOT Chain Testnet";
+const RPC_URL      = "https://rpc.bohr.life";
+const CURRENCY     = { name: "BOT", symbol: "BOT", decimals: 18 };
+const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+const ABI = [
+  "function tagFee() view returns (uint256)",
+  "function refundBps() view returns (uint256)",
+  "function claimTag(string tag, string bioIfNew) payable",
+  "function releaseTag(string tag)",
+  "function updateBio(string newBio)",
+  "function getBio(address) view returns (string)",
+  "function getTagsOfUser(address) view returns (string[])",
+  "function getHoldersOfTag(string) view returns (address[])",
+  "function getTagInfo(string) view returns (uint256 holderCount, uint256 claimedAt)",
+  "function getAllTags() view returns (string[])",
+  "function hasTag(address,string) view returns (bool)",
+  "function tagCount() view returns (uint256)",
+  "event TagClaimed(address indexed user, string tag, bytes32 indexed tagHash, uint256 fee)",
+  "event TagReleased(address indexed user, string tag, bytes32 indexed tagHash, uint256 refund)",
+  "event BioUpdated(address indexed user, string bio)"
+];
+
+let provider, signer, contract, account;
+let currentTagFilter = null;
+let cachedAllTags = [];
+let cachedTagCounts = {};
+
+const $ = (id) => document.getElementById(id);
+const short = (a) => a ? a.slice(0, 6) + "…" + a.slice(-4) : "";
+
+function toast(msg, kind = "") {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show " + kind;
+  setTimeout(() => { t.className = "toast"; }, 2600);
+}
+
+async function ensureChain() {
+  try {
+    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_ID_HEX }] });
+  } catch (e) {
+    if (e && e.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: CHAIN_ID_HEX,
+          chainName: CHAIN_NAME,
+          rpcUrls: [RPC_URL],
+          nativeCurrency: CURRENCY,
+        }],
+      });
+    } else { throw e; }
+  }
+}
+
+async function connect() {
+  if (!window.ethereum) { toast("Install MetaMask", "err"); return; }
+  try {
+    await ensureChain();
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    account = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    $("connectBtn").textContent = short(account);
+    $("netBadge").textContent = CHAIN_NAME + " · " + CHAIN_ID_DEC;
+    toast("Connected", "ok");
+    await refreshAll();
+  } catch (e) {
+    console.error(e);
+    toast(e.shortMessage || e.message || "Connect failed", "err");
+  }
+}
+
+function validSlug(s) {
+  return /^[a-z0-9-]{3,32}$/.test(s);
+}
+
+async function claimTag() {
+  const tag = $("claimTagInput").value.trim();
+  const bio = $("newBioInput") ? $("newBioInput").value.trim() : "";
+  if (!validSlug(tag)) { toast("Invalid slug (3-32, a-z 0-9 -)", "err"); return; }
+  try {
+    const fee = await contract.tagFee();
+    const tx = await contract.claimTag(tag, bio, { value: fee });
+    toast("Claim submitted…");
+    await tx.wait();
+    toast("Tag claimed", "ok");
+    $("claimTagInput").value = "";
+    await refreshAll();
+  } catch (e) { toast(e.shortMessage || e.reason || e.message || "Claim failed", "err"); }
+}
+
+async function releaseTag(tag) {
+  try {
+    const tx = await contract.releaseTag(tag);
+    toast("Release submitted…");
+    await tx.wait();
+    toast("Released", "ok");
+    await refreshAll();
+  } catch (e) { toast(e.shortMessage || e.reason || e.message || "Release failed", "err"); }
+}
+
+async function saveBio() {
+  const bio = $("bioInput").value.trim();
+  if (bio.length > 200) { toast("Bio too long", "err"); return; }
+  try {
+    const tx = await contract.updateBio(bio);
+    toast("Saving bio…");
+    await tx.wait();
+    toast("Bio saved", "ok");
+  } catch (e) { toast(e.shortMessage || e.reason || e.message || "Save failed", "err"); }
+}
+
+async function refreshAll() {
+  if (!contract) return;
+  await Promise.all([renderProfile(), renderAllTags()]);
+  if (currentTagFilter) await renderDirectory(currentTagFilter);
+}
+
+async function renderProfile() {
+  const [bio, myTags, fee] = await Promise.all([
+    contract.getBio(account),
+    contract.getTagsOfUser(account),
+    contract.tagFee(),
+  ]);
+  const feeStr = ethers.formatEther(fee);
+  const body = $("profileBody");
+  body.innerHTML = `
+    <h3>Address</h3>
+    <div class="muted" style="font-size:13px;font-family:'DM Sans',monospace;">${short(account)}</div>
+    <h3>Bio</h3>
+    <div class="field"><textarea id="bioInput" maxlength="200" placeholder="Say hello (max 200 chars)">${(bio||"").replace(/</g,'&lt;')}</textarea></div>
+    <button id="saveBioBtn" class="btn accent small">Save bio</button>
+    <h3>My tags</h3>
+    <div id="myTagsWrap" class="tags"></div>
+    <h3>Claim a tag</h3>
+    <div class="field"><input id="claimTagInput" placeholder="e.g. solidity-dev" maxlength="32" /></div>
+    ${(!bio || bio.length===0) ? `<div class="field"><input id="newBioInput" placeholder="First bio (optional, max 200)" maxlength="200" /></div>` : ""}
+    <button id="claimBtn" class="btn mint">Claim for ${feeStr} BOT</button>
+    <div class="fee-note">Release later for a ${Number(await contract.refundBps())/100}% refund.</div>
+  `;
+  const mtw = $("myTagsWrap");
+  if (myTags.length === 0) {
+    mtw.innerHTML = `<span class="muted" style="font-size:13px;">No tags yet.</span>`;
+  } else {
+    myTags.forEach(t => {
+      const b = document.createElement("button");
+      b.className = "pill mine";
+      b.textContent = "#" + t;
+      b.title = "Click to release";
+      b.onclick = () => { if (confirm(`Release #${t}?`)) releaseTag(t); };
+      mtw.appendChild(b);
+    });
+  }
+  $("saveBioBtn").onclick = saveBio;
+  $("claimBtn").onclick = claimTag;
+}
+
+async function renderAllTags() {
+  const all = await contract.getAllTags();
+  cachedAllTags = all;
+  const wrap = $("allTagsWrap");
+  wrap.innerHTML = "";
+  if (all.length === 0) {
+    wrap.innerHTML = `<span class="muted" style="font-size:13px;">No tags claimed yet. Be first.</span>`;
+    return;
+  }
+  // fetch counts in parallel
+  const counts = await Promise.all(all.map(t => contract.getTagInfo(t).then(r => Number(r[0]))));
+  const paired = all.map((t, i) => ({ t, c: counts[i] })).sort((a,b) => b.c - a.c);
+  cachedTagCounts = {};
+  paired.forEach(p => { cachedTagCounts[p.t] = p.c; });
+  paired.forEach(({t, c}) => {
+    const b = document.createElement("button");
+    b.className = "pill count" + (currentTagFilter === t ? " selected" : "");
+    b.textContent = "#" + t;
+    b.setAttribute("data-count", c);
+    b.onclick = () => selectTag(t);
+    wrap.appendChild(b);
+  });
+}
+
+async function selectTag(tag) {
+  currentTagFilter = tag;
+  $("searchInput").value = tag;
+  await renderDirectory(tag);
+  // refresh selected state on pills
+  document.querySelectorAll("#allTagsWrap .pill").forEach(p => {
+    p.classList.toggle("selected", p.textContent.replace("#","").split(" ")[0] === tag);
+  });
+}
+
+async function renderDirectory(tag) {
+  const body = $("directoryBody");
+  $("directoryTitle").textContent = "#" + tag;
+  const holders = await contract.getHoldersOfTag(tag);
+  $("directorySubtitle").textContent = holders.length + " " + (holders.length === 1 ? "holder" : "holders");
+  if (holders.length === 0) {
+    body.innerHTML = `<div class="empty"><div class="glyph">○</div>No one holds this tag yet.</div>`;
+    return;
+  }
+  body.innerHTML = "";
+  for (const addr of holders) {
+    const [bio, tags] = await Promise.all([contract.getBio(addr), contract.getTagsOfUser(addr)]);
+    const card = document.createElement("div");
+    card.className = "holder-card";
+    const otherTags = tags.filter(t => t !== tag);
+    card.innerHTML = `
+      <div>
+        <div class="addr">${short(addr)}${addr.toLowerCase() === (account||"").toLowerCase() ? " · you" : ""}</div>
+        <div class="bio">${bio ? bio.replace(/</g,'&lt;') : '<span class="muted">— no bio —</span>'}</div>
+        <div class="tags">
+          ${otherTags.slice(0, 12).map(t => `<button class="pill small" data-tag="${t}">#${t}</button>`).join("")}
+        </div>
+      </div>
+      <div class="arrow">›</div>
+    `;
+    card.querySelectorAll("[data-tag]").forEach(el => {
+      el.onclick = () => selectTag(el.getAttribute("data-tag"));
+    });
+    body.appendChild(card);
+  }
+}
+
+async function readOnlyBoot() {
+  // let people browse before connecting
+  try {
+    const ro = new ethers.JsonRpcProvider(RPC_URL);
+    const roContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, ro);
+    if (CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") return;
+    const all = await roContract.getAllTags();
+    const wrap = $("allTagsWrap");
+    wrap.innerHTML = "";
+    if (all.length === 0) {
+      wrap.innerHTML = `<span class="muted" style="font-size:13px;">No tags claimed yet.</span>`;
+      return;
+    }
+    all.forEach(t => {
+      const b = document.createElement("button");
+      b.className = "pill";
+      b.textContent = "#" + t;
+      b.onclick = () => toast("Connect wallet to explore", "err");
+      wrap.appendChild(b);
+    });
+  } catch (e) { /* silent */ }
+}
+
+$("connectBtn").onclick = connect;
+$("searchInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const v = $("searchInput").value.trim().toLowerCase();
+    if (validSlug(v) && contract) selectTag(v);
+    else if (!contract) toast("Connect wallet first", "err");
+    else toast("Bad slug", "err");
+  }
+});
+$("clearSearchBtn").onclick = () => {
+  $("searchInput").value = "";
+  currentTagFilter = null;
+  $("directoryTitle").textContent = "Directory";
+  $("directorySubtitle").textContent = "Search a tag or pick one on the left.";
+  $("directoryBody").innerHTML = `<div class="empty"><div class="glyph">✿</div>Nothing selected yet.</div>`;
+  document.querySelectorAll("#allTagsWrap .pill").forEach(p => p.classList.remove("selected"));
+};
+
+readOnlyBoot();
+
+if (window.ethereum) {
+  window.ethereum.on && window.ethereum.on("accountsChanged", () => location.reload());
+  window.ethereum.on && window.ethereum.on("chainChanged", () => location.reload());
+}
+</script>
+</body>
+</html>
