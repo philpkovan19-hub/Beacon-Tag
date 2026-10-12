@@ -147,6 +147,45 @@
   .toast.ok { color: #3d7a63; }
 
   .footer { text-align: center; margin-top: 40px; color: var(--muted); font-size: 12px; }
+
+  /* ===== BOT Chain ecosystem footer (KPI 5) — soft-UI treatment ===== */
+  .bc-foot { max-width: 1180px; margin: 46px auto 40px; padding: 0 20px; }
+  .bc-foot-panel {
+    background: var(--surface); border-radius: 28px; box-shadow: var(--raise);
+    padding: 30px 28px 26px; text-align: center;
+  }
+  .bc-foot .bc-label {
+    font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .bc-foot .bc-mark {
+    display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 20px;
+  }
+  .bc-foot .bc-medallion {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: var(--surface); box-shadow: var(--raise-sm);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bc-foot .bc-medallion svg { width: 18px; height: 28px; display: block; }
+  .bc-foot .bc-word {
+    font-family: 'DM Sans', sans-serif; font-size: 23px; font-weight: 700;
+    color: var(--ink); letter-spacing: -0.01em;
+  }
+  .bc-foot .bc-word em { font-style: normal; color: var(--accent-ink); }
+  .bc-foot .bc-links { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .bc-foot .bc-links a {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--muted); background: var(--surface);
+    padding: 11px 20px; border-radius: 999px; box-shadow: var(--raise-sm);
+    transition: box-shadow .18s ease, color .18s ease;
+  }
+  .bc-foot .bc-links a:hover { color: var(--accent-ink); box-shadow: var(--press-sm); }
+  .bc-foot .bc-links a svg { width: 15px; height: 15px; opacity: .75; }
+  .bc-foot .bc-rule { width: 70px; height: 6px; border-radius: 999px; margin: 0 auto 16px; box-shadow: var(--press-sm); }
+  .bc-foot .bc-copy { font-size: 11px; color: var(--muted); letter-spacing: 0.02em; }
+  .bc-foot .bc-copy b { font-weight: 700; color: var(--accent-ink); }
 </style>
 </head>
 <body>
@@ -203,28 +242,29 @@
     </div>
   </div>
 
-  <div class="footer">BOT Chain — soft directory · testnet 968</div>
+  <div class="footer">BOT Chain — soft directory · mainnet 677</div>
 </div>
 
 <div id="toast" class="toast"></div>
 
 <script>
 /* ==============================================================
-   MAINNET SWAP BLOCK — when moving from testnet to mainnet,
-   change these five values in one place:
-     CHAIN_ID_HEX   : "0x3C8" -> "0x2A5"
-     CHAIN_ID_DEC   : 968     -> 677
-     CHAIN_NAME     : "BOT Chain Testnet" -> "BOT Chain"
-     RPC_URL        : "https://rpc.bohr.life" -> "https://rpc.botchain.ai"
-     CONTRACT_ADDRESS : redeploy on mainnet and paste here
+   LIVE ON BOT CHAIN MAINNET (chain 677 / 0x2A5)
+   Testnet values kept below as commented fallbacks:
+     CHAIN_ID_HEX   : "0x3C8"
+     CHAIN_ID_DEC   : 968
+     CHAIN_NAME     : "BOT Chain Testnet"
+     RPC_URL        : "https://rpc.bohr.life"
+     EXPLORER       : "https://scan.bohr.life"
    ============================================================== */
 
-const CHAIN_ID_HEX = "0x3C8";
-const CHAIN_ID_DEC = 968;
-const CHAIN_NAME   = "BOT Chain Testnet";
-const RPC_URL      = "https://rpc.bohr.life";
+const CHAIN_ID_HEX = "0x2A5";
+const CHAIN_ID_DEC = 677;
+const CHAIN_NAME   = "BOT Chain";
+const RPC_URL      = "https://rpc.botchain.ai";
+const EXPLORER     = "https://scan.botchain.ai";
 const CURRENCY     = { name: "BOT", symbol: "BOT", decimals: 18 };
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+const CONTRACT_ADDRESS = "0x00A3853FFFeAf9F1F91c817fD370B637A4B395Ec";
 
 const ABI = [
   "function tagFee() view returns (uint256)",
@@ -270,6 +310,7 @@ async function ensureChain() {
           chainId: CHAIN_ID_HEX,
           chainName: CHAIN_NAME,
           rpcUrls: [RPC_URL],
+          blockExplorerUrls: [EXPLORER],
           nativeCurrency: CURRENCY,
         }],
       });
@@ -495,5 +536,32 @@ if (window.ethereum) {
   window.ethereum.on && window.ethereum.on("chainChanged", () => location.reload());
 }
 </script>
+
+<!-- ===== BOT Chain ecosystem footer (KPI 5) ===== -->
+<footer class="bc-foot">
+  <div class="bc-foot-panel">
+    <div class="bc-label">Part of the Ecosystem</div>
+    <div class="bc-mark">
+      <div class="bc-medallion" aria-hidden="true">
+        <svg viewBox="0 0 63.63 100" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#00A67E" d="M31.67 99.95 L0 82.48 L0.11 63.74 L47.01 90.60 L47.01 73.19 L15.98 55.32 L15.95 36.49 L46.92 53.57 L47.39 36.82 L15.96 17.81 L16.26 0 L63.06 27.02 L62.82 46.20 L47.86 54.67 L62.85 63.00 L63.62 81.42 Z"/>
+        </svg>
+      </div>
+      <div class="bc-word"><em>BOT</em> Chain</div>
+    </div>
+    <div class="bc-links">
+      <a href="https://botchain.ai" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        botchain.ai
+      </a>
+      <a href="https://scan.botchain.ai" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        Explorer
+      </a>
+    </div>
+    <div class="bc-rule"></div>
+    <div class="bc-copy">&copy; 2026 <b>BOT Chain</b> &middot; Mainnet 677</div>
+  </div>
+</footer>
 </body>
 </html>
